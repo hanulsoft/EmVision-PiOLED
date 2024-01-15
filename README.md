@@ -1,6 +1,6 @@
 # LED Display Control Sample Code
 
-![EmVision LCD](assets\EmVision_LCD.png)
+![EmVision LCD](assets/EmVision_LCD.png)
 
 ## 소개
 
