@@ -13,12 +13,14 @@ MIT License
 import re
 import time
 import subprocess
+import packaging.version
 
 import Adafruit_SSD1306
 
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
+from PIL import __version__ as PIL_VERSION
 
 
 def get_network_interface_state(interface) -> str:
@@ -91,34 +93,48 @@ def draw_system_stats(draw: ImageDraw, width: int, height: int, font: ImageFont)
 
     # 네트워크 정보
     eth0_ip = f"Eth0: {get_ip_address('eth0')}"
-    draw.text((x, y), eth0_ip, font=font, fill=255)
-    y += draw.textsize(eth0_ip, font=font)[1] + margin
+    draw.text((x, y), eth0_ip, font=font, fill=1)
+    if packaging.version.parse(PIL_VERSION) < packaging.version.parse("10.0.0"):
+        y += draw.textsize(eth0_ip, font=font)[1] + margin
+    else:
+        y = font.getbbox(eth0_ip)[3] + margin
 
     # CPU 사용률
     cpu_usage = f"CPU: {get_cpu_usage() * 100:3.1f}%"
-    draw.text((x, y), cpu_usage, font=font, fill=255)
-    px, py = draw.textsize(cpu_usage, font=font)
+    draw.text((x, y), cpu_usage, font=font, fill=1)
+    if packaging.version.parse(PIL_VERSION) < packaging.version.parse("10.0.0"):
+        px, py = draw.textsize(cpu_usage, font=font)
+    else:
+        px, py = font.getbbox(cpu_usage)[2:]
     px += 5
     usage_width = int((width - px) * get_cpu_usage()) + px
-    draw.rectangle((px, y + 2, usage_width, y + py - 2), outline=0, fill=200)
+    draw.rectangle((px, y + 2, usage_width, y + py - 2), outline=0, fill=1)
     y += py + margin
 
     # GPU 사용률
     gpu_usage = f"GPU: {get_gpu_usage() * 100:3.1f}%"
-    draw.text((x, y), gpu_usage, font=font, fill=255)
-    px, py = draw.textsize(gpu_usage, font=font)
+    if packaging.version.parse(PIL_VERSION) < packaging.version.parse("10.0.0"):
+        px, py = draw.textsize(gpu_usage, font=font)
+    else:
+        y += 1
+        px, py = font.getbbox(gpu_usage)[2:]
+    draw.text((x, y), gpu_usage, font=font, fill=1)
     px += 5
     usage_width = int((width - px) * get_gpu_usage()) + px
-    draw.rectangle((px, y + 2, usage_width, y + py - 2), outline=0, fill=200)
+    draw.rectangle((px, y + 2, usage_width, y + py - 2), outline=0, fill=1)
     y += py + margin
 
     # 메모리 사용률
     mem_usage = f"Mem: {get_mem_usage() * 100:3.1f}%"
-    draw.text((x, y), mem_usage, font=font, fill=255)
-    px, py = draw.textsize(mem_usage, font=font)
+    if packaging.version.parse(PIL_VERSION) < packaging.version.parse("10.0.0"):
+        px, py = draw.textsize(mem_usage, font=font)
+    else:
+        y += 1
+        px, py = font.getbbox(mem_usage)[2:]
+    draw.text((x, y), mem_usage, font=font, fill=1)
     px += 5
     usage_width = int((width - px) * get_mem_usage()) + px
-    draw.rectangle((px, y + 2, usage_width, y + py - 2), outline=0, fill=200)
+    draw.rectangle((px, y + 2, usage_width, y + py - 2), outline=0, fill=1)
     y += py + margin
 
 
@@ -131,7 +147,10 @@ def main() -> None:
     width, height = display.width, display.height
     image = Image.new("1", (width, height))
     draw = ImageDraw.Draw(image)
-    font = ImageFont.load_default()
+    if packaging.version.parse(PIL_VERSION) < packaging.version.parse("10.0.0"):
+        font = ImageFont.load_default()
+    else:
+        font = ImageFont.load_default(9)
 
     while True:
         draw_system_stats(draw, width, height, font)
